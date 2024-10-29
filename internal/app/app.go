@@ -23,7 +23,8 @@ func New(
 		panic(err)
 	}
 
-	authService := auth.New(log, storage, storage, storage, tokenTTl)
+	authService := auth.New(log, storage, tokenTTl)
+
 	grpcApp := grpcapp.New(log, authService, grpcPort)
 
 	return &App{
