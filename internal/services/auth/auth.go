@@ -15,36 +15,29 @@ import (
 )
 
 type Auth struct {
-	log          *slog.Logger
-	userSaver    UserSaver
-	userProvider UserProvider
-	appProvider  AppProvider
-	tokenTTL     time.Duration
+	log        *slog.Logger
+	dbServices DbServices
+	tokenTTL   time.Duration
 }
 
-// TODO: Добавить методы для смены пароля и роли
-
-type UserSaver interface {
+// DbServices TODO: Добавить методы для смены пароля и роли
+// DbServices Интерфейс, хранящий в себе методы, реализуемые бд
+type DbServices interface {
 	SaveUser(
 		ctx context.Context,
 		username string,
 		passwordHash []byte,
 	) (userID int64, err error)
-}
 
-type UserProvider interface {
 	GetUser(ctx context.Context, username string) (models.User, error)
 	IsAdmin(ctx context.Context, userID int64) (bool, error)
-}
 
-type AppProvider interface {
 	GetApp(ctx context.Context, appID int) (models.App, error)
 }
 
 // Ошибки сервисного слоя
 var (
 	ErrInvalidCredentials = errors.New("invalid credentials")
-	ErrInvalidAppId       = errors.New("invalid app id")
 	ErrUserExists         = errors.New("user already exists")
 	ErrInvalidUserId      = errors.New("invalid user id")
 )
@@ -52,17 +45,13 @@ var (
 // New возвращает новый объект Auth сервиса
 func New(
 	log *slog.Logger,
-	userProvider UserProvider,
-	userSaver UserSaver,
-	appProvider AppProvider,
+	dbServices DbServices,
 	tokenTTL time.Duration,
 ) *Auth {
 	return &Auth{
-		log:          log,
-		userSaver:    userSaver,
-		userProvider: userProvider,
-		appProvider:  appProvider,
-		tokenTTL:     tokenTTL,
+		log:        log,
+		dbServices: dbServices,
+		tokenTTL:   tokenTTL,
 	}
 }
 
@@ -86,7 +75,7 @@ func (a *Auth) Login(
 
 	log.Info("Trying to login user")
 
-	user, err := a.userProvider.GetUser(ctx, username)
+	user, err := a.dbServices.GetUser(ctx, username)
 
 	// Идентефикация пользователя
 	if err != nil {
@@ -109,7 +98,7 @@ func (a *Auth) Login(
 	}
 
 	// Проверяем приложение в которое пользователь пытается зайти
-	app, err := a.appProvider.GetApp(ctx, appID)
+	app, err := a.dbServices.GetApp(ctx, appID)
 
 	if err != nil {
 		return "", fmt.Errorf("%s: %w", operator, err)
@@ -154,7 +143,7 @@ func (a *Auth) Register(
 		return 0, fmt.Errorf("%s: %w", operator, err)
 	}
 
-	id, err := a.userSaver.SaveUser(ctx, username, passwordHash)
+	id, err := a.dbServices.SaveUser(ctx, username, passwordHash)
 	if err != nil {
 		if errors.Is(err, storage.ErrUserExists) {
 			log.Error("GetUser already exists", sl.Err(err))
@@ -181,7 +170,7 @@ func (a *Auth) IsAdmin(ctx context.Context, userID int64) (bool, error) {
 
 	log.Info("Checking if user is admin")
 
-	isAdmin, err := a.userProvider.IsAdmin(ctx, userID)
+	isAdmin, err := a.dbServices.IsAdmin(ctx, userID)
 
 	if err != nil {
 		if errors.Is(err, storage.ErrUserNotFound) {

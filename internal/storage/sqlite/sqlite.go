@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/mattn/go-sqlite3"
-	_ "github.com/mattn/go-sqlite3"
 	"shilka-sso/internal/domain/models"
 	"shilka-sso/internal/storage"
 )
