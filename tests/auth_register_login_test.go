@@ -137,6 +137,19 @@ func TestRegisterIsAdmin_HappyPath(t *testing.T) {
 	assert.False(t, IsAdminResponse.GetIsAdmin())
 }
 
+// Пытается обратиться к несуществующему пользователю.
+func TestIsAdmin_FailCase(t *testing.T) {
+	ctx, st := suite.New(t)
+
+	fakeId := int64(100000000)
+
+	_, err := st.AuthClient.IsAdmin(ctx, &ssov1.IsAdminRequest{
+		UserId: fakeId,
+	})
+
+	require.EqualError(t, err, "rpc error: code = InvalidArgument desc = invalid user id")
+}
+
 // Пытается создать пользователей с именами и паролями, которые не должны пройти валидацию
 func TestRegister_FailCases(t *testing.T) {
 	ctx, st := suite.New(t)
