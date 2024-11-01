@@ -85,7 +85,7 @@ func (a *Auth) Login(
 			return "", fmt.Errorf("%s: %w", operator, ErrInvalidCredentials)
 		}
 
-		a.log.Error("Failed to get user", err)
+		a.log.Error("Failed to get user", sl.Err(err))
 
 		return "", fmt.Errorf("%s: %w", operator, err)
 	}
@@ -119,7 +119,7 @@ func (a *Auth) Login(
 }
 
 // Register создаёт пользователя с указанными данными
-// Если пользователь с данным ником уже существует выдаёт ошибку
+// Если пользователь с данным ником уже существует выдавать ошибку
 func (a *Auth) Register(
 	ctx context.Context,
 	username string,
@@ -134,11 +134,11 @@ func (a *Auth) Register(
 
 	log.Info("Registering user")
 
-	// Хэширование пароля
+	// Хеширование пароля
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 
 	if err != nil {
-		log.Error("Failed to hash password", err)
+		log.Error("Failed to hash password", sl.Err(err))
 
 		return 0, fmt.Errorf("%s: %w", operator, err)
 	}
@@ -149,7 +149,7 @@ func (a *Auth) Register(
 			log.Error("GetUser already exists", sl.Err(err))
 			return 0, fmt.Errorf("%s: %w", operator, ErrUserExists)
 		}
-		log.Error("Failed to save user", err)
+		log.Error("Failed to save user", sl.Err(err))
 		return 0, fmt.Errorf("%s: %w", operator, err)
 	}
 

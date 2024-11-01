@@ -36,7 +36,7 @@ type ServerAPI struct {
 	auth Auth
 }
 
-// RegisterServer Регестрирует сервер с методами, описанными в Auth interface
+// RegisterServer Регистрирует сервер с методами, описанными в Auth interface
 func RegisterServer(gRPC *grpc.Server, auth Auth) {
 	ssov1.RegisterAuthServer(gRPC, &ServerAPI{auth: auth})
 }
@@ -102,7 +102,9 @@ func (s *ServerAPI) IsAdmin(ctx context.Context, req *ssov1.IsAdminRequest) (*ss
 	isAdmin, err := s.auth.IsAdmin(ctx, req.GetUserId())
 
 	if err != nil {
-		//TODO: обработать ошибку
+		if errors.Is(err, auth.ErrInvalidUserId) {
+			return nil, status.Error(codes.InvalidArgument, "invalid user id")
+		}
 		return nil, status.Errorf(codes.Internal, "internal error")
 	}
 
